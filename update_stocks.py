@@ -1,9 +1,10 @@
 import os
 import shutil
-from datetime import datetime
+from datetime import datetime, date
 import numpy as np
 import pandas as pd
-from nsepython import nse_get_top_gainers, nse_fetch_history # pip install nsepython
+from nsepython import nse_get_top_gainers  # For current top gainers
+from nsepy import get_history  # For historical data
 
 # Fetch top 50 gainers as the base dataset
 data = nse_get_top_gainers()
@@ -13,16 +14,17 @@ df = df.head(50)
 # Current datetime string for timestamping
 now = datetime.now().strftime('%a %b %d %H:%M:%S IST %Y')
 
-# Define period for historical data (example: last 30 days)
-start_date = (datetime.now() - pd.Timedelta(days=30)).strftime('%Y-%m-%d')
-end_date = datetime.now().strftime('%Y-%m-%d')
-
 def calculate_metrics(symbol):
     try:
-        hist = nse_fetch_history(symbol=symbol, start=start_date, end=end_date)
+        # Get last 30 calendar days' data
+        hist = get_history(symbol=symbol,
+                           start=date.today() - pd.Timedelta(days=30),
+                           end=date.today())
+
         if hist.empty:
             return None
-        close_prices = hist['Close Price'].values
+
+        close_prices = hist['Close'].values
         returns = np.diff(close_prices) / close_prices[:-1]
 
         profit_loss = close_prices[-1] - close_prices[0]
@@ -45,12 +47,13 @@ lines = [
 ]
 
 for idx, row in df.iterrows():
-    metrics = calculate_metrics(row['symbol'])
+    symbol = row['symbol']
+    metrics = calculate_metrics(symbol)
     if metrics:
         profit_loss, win_rate, max_drawdown, sharpe_ratio = metrics
-        lines.append(f"| {row['symbol']} | {profit_loss:.2f} | {win_rate:.2f} | {max_drawdown:.2f} | {sharpe_ratio:.2f} |\n")
+        lines.append(f"| {symbol} | {profit_loss:.2f} | {win_rate:.2f} | {max_drawdown:.2f} | {sharpe_ratio:.2f} |\n")
     else:
-        lines.append(f"| {row['symbol']} | N/A | N/A | N/A | N/A |\n")
+        lines.append(f"| {symbol} | N/A | N/A | N/A | N/A |\n")
 
 # Archive previous README.md if exists
 if os.path.exists("README.md"):
@@ -64,3 +67,4 @@ if os.path.exists("README.md"):
 # Write updated README.md
 with open("README.md", "w", encoding="utf-8") as f:
     f.writelines(lines)
+
