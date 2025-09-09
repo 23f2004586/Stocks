@@ -3,10 +3,10 @@ import shutil
 from datetime import datetime
 import numpy as np
 import pandas as pd
-from nsepython import nse_eq_top_gainers, nse_fetch_history  # pip install nsepython
+from nsepython import nse_get_top_gainers, nse_fetch_history # pip install nsepython
 
 # Fetch top 50 gainers as the base dataset
-data = nse_eq_top_gainers()
+data = nse_get_top_gainers()
 df = pd.DataFrame(data)
 df = df.head(50)
 
